@@ -12,7 +12,7 @@ func (app *application) showPropertyHandler(w http.ResponseWriter, r *http.Reque
 	// extract ID param
 	id, err := app.readIDParam(r)
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		app.notFoundResponse(w, r)
 		return
 	}
 
@@ -36,9 +36,9 @@ func (app *application) showPropertyHandler(w http.ResponseWriter, r *http.Reque
 		},
 		Price: 200000,
 		Currency: "USD",
-		Nearby: map[string]int8{
-			"Hospital": 7,
-			"BusStop": 12,
+		Nearby: map[string]string{
+			"Hospital": "7km",
+			"Busstop": "12km",
 		},
 		Amenities: []string{"Parking", "Laundry Room"},
 		Version: 1,
@@ -46,8 +46,6 @@ func (app *application) showPropertyHandler(w http.ResponseWriter, r *http.Reque
 
 	err = app.writeJSON(w, http.StatusOK, envelop{"property": property}, nil)
 	if err != nil {
-		app.logger.Println(err)
-		http.Error(w, "the server encountered an error and could not process your request", http.StatusInternalServerError)
-		return
+		app.serverErrorResponse(w, r, err)
 	}
 }

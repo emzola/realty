@@ -15,9 +15,9 @@ type Property struct {
 	Type string	`json:"type,omitempty"`
 	Category string	`json:"category,omitempty"`
 	Features map[string]int32	`json:"features,omitempty"`
-	Price int64	`json:"price"`
+	Price float64	`json:"price"`
 	Currency string	`json:"currency"`
-	Nearby map[string]int8	`json:"nearby,omitempty"`
+	Nearby map[string]string	`json:"nearby,omitempty"`
 	Amenities []string	`json:"amenities,omitempty"`
 	Version int32	`json:"version"`
 }
