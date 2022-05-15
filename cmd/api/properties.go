@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -48,4 +49,30 @@ func (app *application) showPropertyHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+func(app *application) createPropertyHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Title string	`json:"title"`
+		Description string	`json:"description"`
+		City string	`json:"city"`
+		Location string	`json:"location"`
+		Latitude float64	`json:"latitude,omitempty"`
+		Longitude float64	`json:"longitude,omitempty"`
+		Type string	`json:"type,omitempty"`
+		Category string	`json:"category,omitempty"`
+		Features map[string]int32	`json:"features,omitempty"`
+		Price float64	`json:"price"`
+		Currency string	`json:"currency"`
+		Nearby map[string]string	`json:"nearby,omitempty"`
+		Amenities []string	`json:"amenities,omitempty"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	fmt.Fprintf(w, "%+v\n", input)
 }

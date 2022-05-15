@@ -15,6 +15,7 @@ func (app *application) routes() *httprouter.Router {
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/properties/:id", app.showPropertyHandler)
-	
+	router.HandlerFunc(http.MethodPost, "/v1/account/properties/create", app.createPropertyHandler)
+
 	return router
 }
