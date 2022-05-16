@@ -46,7 +46,6 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	// Start the HTTP server
 	logger.Printf("starting %s server on %s\n", cfg.env, srv.Addr)
 	err := srv.ListenAndServe()
 	logger.Fatal(err)

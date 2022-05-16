@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/emzola/realty/internal/data"
+	"github.com/emzola/realty/internal/validator"
 )
 
 // showPropertyHandler shows property details.
@@ -51,7 +52,10 @@ func (app *application) showPropertyHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// createPropertyHandler creates a property.
 func(app *application) createPropertyHandler(w http.ResponseWriter, r *http.Request) {
+	// Decode JSON into this input struct instead of directly on the property struct. 
+	// That way, the client does not have to provide ID and Version fields
 	var input struct {
 		Title string	`json:"title"`
 		Description string	`json:"description"`
@@ -71,6 +75,29 @@ func(app *application) createPropertyHandler(w http.ResponseWriter, r *http.Requ
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// Copy values from the input struct into a new peoperty struct
+	property := &data.Property{
+		Title: input.Title,
+		Description: input.Description,
+		City: input.City,
+		Location: input.Location,
+		Latitude: input.Latitude,
+		Longitude: input.Longitude,
+		Type: input.Type,
+		Category: input.Category,
+		Features: input.Features,
+		Price: input.Price,
+		Currency: input.Currency,
+		Nearby: input.Nearby,
+		Amenities: input.Amenities,
+	}
+
+	v := validator.New()	
+	if data.ValidateProperty(v, property); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
