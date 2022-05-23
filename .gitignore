@@ -3,4 +3,7 @@
 *.dll
 *.so
 *.dylib
+.envrc
 bin/
+remote/
+**/Makefile
