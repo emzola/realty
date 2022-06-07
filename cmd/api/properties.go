@@ -28,8 +28,8 @@ func (app *application) showPropertyHandler(w http.ResponseWriter, r *http.Reque
 		Location: "65 Tverskaya street",
 		Latitude: 1.225,
 		Longitude: 3.664,
-		Type: "For Sale",
-		Category: "Villa",
+		Type: []string{"For Sale"},
+		Category: []string{"Villa"},
 		Features: map[string]int32{
 			"Bedrooms": 1,
 			"Bathrooms": 1,
@@ -37,7 +37,7 @@ func (app *application) showPropertyHandler(w http.ResponseWriter, r *http.Reque
 			"SquareMetres": 83,
 		},
 		Price: 200000,
-		Currency: "USD",
+		Currency: []string{"USD"},
 		Nearby: map[string]string{
 			"Hospital": "7km",
 			"Busstop": "12km",
@@ -63,11 +63,11 @@ func(app *application) createPropertyHandler(w http.ResponseWriter, r *http.Requ
 		Location string	`json:"location"`
 		Latitude float64	`json:"latitude,omitempty"`
 		Longitude float64	`json:"longitude,omitempty"`
-		Type string	`json:"type,omitempty"`
-		Category string	`json:"category,omitempty"`
+		Type []string	`json:"type,omitempty"`
+		Category []string	`json:"category,omitempty"`
 		Features map[string]int32	`json:"features,omitempty"`
 		Price float64	`json:"price"`
-		Currency string	`json:"currency"`
+		Currency []string	`json:"currency"`
 		Nearby map[string]string	`json:"nearby,omitempty"`
 		Amenities []string	`json:"amenities,omitempty"`
 	}
@@ -78,7 +78,7 @@ func(app *application) createPropertyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Copy values from the input struct into a new peoperty struct
+	// Copy values from the input struct into a new property struct
 	property := &data.Property{
 		Title: input.Title,
 		Description: input.Description,
