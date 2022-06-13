@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS properties (
     longitude numeric NOT NULL,
     type text[] NOT NULL,
     category text[] NOT NULL,
-    features hstore NOT NULL,
+    features JSONB NOT NULL,
     price numeric NOT NULL,
     currency text[] NOT NULL,
-    nearby hstore NOT NULL,
+    nearby JSONB NOT NULL,
     amenities text[] NOT NULL,
     version integer NOT NULL DEFAULT 1
 );

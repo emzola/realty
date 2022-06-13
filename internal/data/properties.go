@@ -1,30 +1,68 @@
 package data
 
 import (
+	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/emzola/realty/internal/validator"
+	"github.com/lib/pq"
 )
 
 // Property contains information about a property
 type Property struct {
-	ID        int64	`json:"id"`
-	CreatedAt time.Time	`json:"-"`
-	Title string	`json:"title"`
-	Description string	`json:"description"`
-	City string	`json:"city"`
-	Location string	`json:"location"`
-	Latitude float64	`json:"latitude,omitempty"`
-	Longitude float64	`json:"longitude,omitempty"`
-	Type []string	`json:"type,omitempty"`
-	Category []string	`json:"category,omitempty"`
-	Features map[string]int32	`json:"features,omitempty"`
-	Price float64	`json:"price"`
-	Currency []string	`json:"currency"`
-	Nearby map[string]string	`json:"nearby,omitempty"`
-	Amenities []string	`json:"amenities,omitempty"`
-	Version int32	`json:"version"`
+	ID          int64             `json:"id"`
+	CreatedAt   time.Time         `json:"-"`
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	City        string            `json:"city"`
+	Location    string            `json:"location"`
+	Latitude    float64           `json:"latitude,omitempty"`
+	Longitude   float64           `json:"longitude,omitempty"`
+	Type        []string          `json:"type,omitempty"`
+	Category    []string          `json:"category,omitempty"`
+	Features    Features				  `json:"features,omitempty"`
+	Price       float64           `json:"price"`
+	Currency    []string          `json:"currency"`
+	Nearby      Nearby 						`json:"nearby,omitempty"`
+	Amenities   []string          `json:"amenities,omitempty"`
+	Version     int32             `json:"version"`
 }
+
+// Features contains features of a property
+type Features map[string]interface{}
+
+func (a Features) Value() (driver.Value, error) {
+	return json.Marshal(a)
+}
+
+func (a *Features) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+			return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(b, &a)
+}
+
+// Nearby contains information about a nearby facilities
+type Nearby map[string]interface{}
+
+func (a Nearby) Value() (driver.Value, error) {
+	return json.Marshal(a)
+}
+
+func (a *Nearby) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+			return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(b, &a)
+}
+
 
 // ValidateProperty validates a property based on set validation criteria.
 func ValidateProperty(v *validator.Validator, property *Property) {
@@ -34,18 +72,52 @@ func ValidateProperty(v *validator.Validator, property *Property) {
 	v.Check(property.City != "", "city", "must be provided")
 	v.Check(property.Location != "", "location", "must be provided")
 	v.Check(len(property.Type) <= 1, "type", "must not contain more than 1 type")
-	v.Check(property.Type[0] != "", "type", "must be a provided")
+	// v.Check(property.Type[0] != "", "type", "must be a provided")
 	v.Check(len(property.Category) <= 1, "category", "must not contain more than 1 category")
-	v.Check(property.Category[0] != "", "category", "must be provided")
+	// v.Check(property.Category[0] != "", "category", "must be provided")
 	v.Check(property.Features != nil, "features", "must be provided")
 	v.Check(len(property.Features) >= 1, "features", "must contain at least 1 feature")
 	v.Check(len(property.Features) <= 20, "features", "must not contain more than 20 features")
 	v.Check(property.Price != 0, "price", "must be provided")
 	v.Check(property.Price > 0, "price", "must be a positive number")
 	v.Check(len(property.Currency) <= 1, "currency", "must not contain more than 1 currency")
-	v.Check(property.Currency[0] == "USD" || property.Currency[0] == "GBP" || property.Currency[0] == "EUR" , "currency", "must be USD, GBP or EUR")
+	// v.Check(property.Currency[0] == "USD" || property.Currency[0] == "GBP" || property.Currency[0] == "EUR", "currency", "must be USD, GBP or EUR")
 	v.Check(property.Nearby != nil, "nearby", "must be provided")
 	v.Check(len(property.Nearby) >= 1, "nearby", "must contain at least 1 facility")
 	v.Check(len(property.Nearby) <= 10, "nearby", "must not contain more than 10 facilities")
 	v.Check(validator.Unique(property.Amenities), "amenities", "must not contain duplicate values")
+}
+
+
+// PropertyModel struct wraps a sql.DB connection pool.
+type PropertyModel struct {
+	DB *sql.DB
+}
+
+// Insert inserts a new record into the property table.
+func (p PropertyModel) Insert(property *Property) error {
+	query := `
+	INSERT INTO properties(title, description, city, location, latitude, longitude, type, category, features, price, currency, nearby, amenities)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	RETURNING id, created_at, version`
+
+
+	args := []interface{}{property.Title, property.Description, property.City, property.Location, property.Latitude, property.Longitude, pq.Array(property.Type), pq.Array(property.Category), property.Features, property.Price, pq.Array(property.Currency), property.Nearby, pq.Array(property.Amenities)}
+
+	return p.DB.QueryRow(query, args...).Scan(&property.ID, &property.CreatedAt, &property.Version)
+}
+
+// Get fetches a specific record from the properties table.
+func (p PropertyModel) Get(id int64) error {
+	return nil
+}
+
+// Update updates a specific record in the properties table.
+func (p PropertyModel) Update(property *Property) error {
+	return nil
+}
+
+// Delete deletes a specific record from the peoperties table
+func (p PropertyModel) Delete(id int64) error {
+	return nil
 }

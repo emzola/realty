@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/emzola/realty/internal/data"
 	_ "github.com/lib/pq"
 )
 
@@ -18,17 +19,18 @@ const version = "1.0.0"
 type config struct {
 	port int
 	env  string
-	db struct {
-		dsn string
+	db   struct {
+		dsn          string
 		maxOpenConns int
 		maxIdleConns int
-		maxIdleTime string
+		maxIdleTime  string
 	}
 }
 
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
@@ -38,7 +40,7 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment(development|staging|production)")
 
-	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://realty:pa55word@localhost/realty?sslmode=disable", "PostgreSQL DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("REALTY_DB_DSN"), "PostgreSQL DSN")
 
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgresQl max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgresQl max idle connections")
@@ -59,14 +61,15 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	// Create HTTP server with timeout settings
 	srv := &http.Server{
-		Addr: fmt.Sprintf(":%d", cfg.port),
-		Handler: app.routes(),
-		IdleTimeout: time.Minute,
-		ReadTimeout: 30 * time.Second,
+		Addr:         fmt.Sprintf(":%d", cfg.port),
+		Handler:      app.routes(),
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
 
@@ -90,8 +93,7 @@ func openDB(cfg config) (*sql.DB, error) {
 	}
 	db.SetConnMaxIdleTime(duration)
 
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	err = db.PingContext(ctx)

@@ -10,7 +10,7 @@ func (app *application) logError(r *http.Request, err error) {
 	app.logger.Println(err)
 }
 
-// errorResponse is a generic method that sends JSON-formatted error messages to the client with a given status code. 
+// errorResponse is a generic method that sends JSON-formatted error messages to the client with a given status code.
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message interface{}) {
 	env := envelop{"error": message}
 	err := app.writeJSON(w, status, env, nil)
