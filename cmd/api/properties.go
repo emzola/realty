@@ -1,9 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/emzola/realty/internal/data"
 	"github.com/emzola/realty/internal/validator"
@@ -18,32 +18,15 @@ func (app *application) showPropertyHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// instantiate sample property struct
-	property := data.Property{
-		ID:          id,
-		CreatedAt:   time.Now(),
-		Title:       "6007 Applegate Lane",
-		Description: "Don't let him know she liked them best, For this must ever be A secret, kept from all the children she knew she had a bone in his throat,' said the Footman, 'and that for the moment they saw the White Rabbit as he spoke, and added 'It isn't mine,' said the King.",
-		City:        "Moscow",
-		Location:    "65 Tverskaya street",
-		Latitude:    1.225,
-		Longitude:   3.664,
-		Type:        []string{"For Sale"},
-		Category:    []string{"Villa"},
-		Features: data.Features{
-			"Bedrooms":     1,
-			"Bathrooms":    1,
-			"Floors":       3,
-			"SquareMetres": 83,
-		},
-		Price:    200000,
-		Currency: []string{"USD"},
-		Nearby: data.Nearby{
-			"Hospital": "7km",
-			"Busstop":  "12km",
-		},
-		Amenities: []string{"Parking", "Laundry Room"},
-		Version:   1,
+	property, err := app.models.Properties.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelop{"property": property}, nil)

@@ -14,7 +14,7 @@ import (
 // Property contains information about a property
 type Property struct {
 	ID          int64             `json:"id"`
-	CreatedAt   time.Time         `json:"-"`
+	CreatedAt   time.Time         `json:"created_at,omitempty"`
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
 	City        string            `json:"city"`
@@ -108,8 +108,47 @@ func (p PropertyModel) Insert(property *Property) error {
 }
 
 // Get fetches a specific record from the properties table.
-func (p PropertyModel) Get(id int64) error {
-	return nil
+func (p PropertyModel) Get(id int64) (*Property, error) {
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+	SELECT id, created_at, title, description, city, location, latitude, longitude, type, category, features, price, currency, nearby, amenities, version
+	FROM properties
+	WHERE id = $1`
+
+	var property Property
+
+	err := p.DB.QueryRow(query, id).Scan(
+		&property.ID, 
+		&property.CreatedAt, 
+		&property.Title, 
+		&property.Description, 
+		&property.City, 
+		&property.Location, 
+		&property.Latitude, 
+		&property.Longitude, 
+		pq.Array(&property.Type), 
+		pq.Array(&property.Category), 
+		&property.Features, 
+		&property.Price, 
+		pq.Array(&property.Currency), 
+		&property.Nearby, 
+		pq.Array(&property.Amenities),
+		&property.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err			
+		}
+	}
+
+	return &property, nil
 }
 
 // Update updates a specific record in the properties table.
