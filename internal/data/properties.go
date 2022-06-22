@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
@@ -104,7 +105,10 @@ func (p PropertyModel) Insert(property *Property) error {
 
 	args := []interface{}{property.Title, property.Description, property.City, property.Location, property.Latitude, property.Longitude, pq.Array(property.Type), pq.Array(property.Category), property.Features, property.Price, pq.Array(property.Currency), property.Nearby, pq.Array(property.Amenities)}
 
-	return p.DB.QueryRow(query, args...).Scan(&property.ID, &property.CreatedAt, &property.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return p.DB.QueryRowContext(ctx, query, args...).Scan(&property.ID, &property.CreatedAt, &property.Version)
 }
 
 // Get fetches a specific record from the properties table.
@@ -120,7 +124,10 @@ func (p PropertyModel) Get(id int64) (*Property, error) {
 
 	var property Property
 
-	err := p.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	defer cancel()
+
+	err := p.DB.QueryRowContext(ctx, query, id).Scan(
 		&property.ID, 
 		&property.CreatedAt, 
 		&property.Title, 
@@ -155,12 +162,25 @@ func (p PropertyModel) Get(id int64) (*Property, error) {
 func (p PropertyModel) Update(property *Property) error {
 	query := `UPDATE properties
 	SET title = $1, description = $2, city = $3, location = $4, latitude = $5, longitude = $6, type = $7, category = $8, features = $9, price = $10, currency = $11, nearby = $12, amenities = $13, version = version + 1
-	WHERE id = $14
+	WHERE id = $14 AND version = $15
 	RETURNING version`
 
-	args := []interface{}{property.Title, property.Description, property.City, property.Location, property.Latitude, property.Longitude, pq.Array(property.Type), pq.Array(property.Category), property.Features, property.Price, pq.Array(property.Currency), property.Nearby, pq.Array(property.Amenities), property.ID}
+	args := []interface{}{property.Title, property.Description, property.City, property.Location, property.Latitude, property.Longitude, pq.Array(property.Type), pq.Array(property.Category), property.Features, property.Price, pq.Array(property.Currency), property.Nearby, pq.Array(property.Amenities), property.ID, property.Version}
 
-	return p.DB.QueryRow(query, args...).Scan(&property.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel() 
+	
+	err := p.DB.QueryRowContext(ctx, query, args...).Scan(&property.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Delete deletes a specific record from the peoperties table
@@ -172,7 +192,10 @@ func (p PropertyModel) Delete(id int64) error {
 	query := `DELETE FROM properties
 	WHERE id = $1`
 
-	result, err := p.DB.Exec(query, id)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel() 
+
+	result, err := p.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

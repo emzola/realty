@@ -197,7 +197,12 @@ func(app *application) updatePropertyHandler(w http.ResponseWriter, r *http.Requ
 	// Pass the updated property record to the Update() method to update the database
 	err = app.models.Properties.Update(property)
 	if err != nil {  
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 
@@ -208,6 +213,7 @@ func(app *application) updatePropertyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 }
+
 // deletePropertyHandler deletes a property.
 func (app *application) deletePropertyHandler(w http.ResponseWriter, r *http.Request) {
 	// extract ID param
