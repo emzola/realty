@@ -153,7 +153,14 @@ func (p PropertyModel) Get(id int64) (*Property, error) {
 
 // Update updates a specific record in the properties table.
 func (p PropertyModel) Update(property *Property) error {
-	return nil
+	query := `UPDATE properties
+	SET title = $1, description = $2, city = $3, location = $4, latitude = $5, longitude = $6, type = $7, category = $8, features = $9, price = $10, currency = $11, nearby = $12, amenities = $13, version = version + 1
+	WHERE id = $14
+	RETURNING version`
+
+	args := []interface{}{property.Title, property.Description, property.City, property.Location, property.Latitude, property.Longitude, pq.Array(property.Type), pq.Array(property.Category), property.Features, property.Price, pq.Array(property.Currency), property.Nearby, pq.Array(property.Amenities), property.ID}
+
+	return p.DB.QueryRow(query, args...).Scan(&property.Version)
 }
 
 // Delete deletes a specific record from the peoperties table
